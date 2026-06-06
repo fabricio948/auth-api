@@ -9,7 +9,7 @@ import java.util.UUID;
 import java.util.Optional;
 
 @Repository
-public class UserRepository extends JpaRepository<User , UUID> {
+public interface UserRepository extends JpaRepository<User , UUID> {
 
     // Método customizado para encontrar um usuário pelo email
     Optional<User> findByEmail(String email);
