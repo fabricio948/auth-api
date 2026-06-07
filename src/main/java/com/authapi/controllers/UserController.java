@@ -41,7 +41,7 @@ public class UserController {
         return ResponseEntity.ok(userService.buscarPorId(id));
     }
 
-    @PutMapping
+    @PutMapping("/{id}")
     public ResponseEntity<UserResponseDto> alterar(@PathVariable UUID id , @RequestBody @Valid UserRegistrationDto dto){
         return ResponseEntity.ok(userService.alterar(id, dto));
     }
