@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -75,5 +76,74 @@ public class UserServiceTest {
 
         // SOLID/Clean Code: Se deu erro no e-mail, o método save NUNCA deve ter sido chamado
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("Deve retornar uma lista de DTOs ao buscar todos os usuários")
+    void buscarTodosDeveRetornarLista() {
+        // Arrange
+        User user1 = new User();
+        user1.setNome("Lincoln");
+        user1.setEmail("lincoln@email.com");
+
+        User user2 = new User();
+        user2.setNome("Fabricio");
+        user2.setEmail("fabricio@email.com");
+
+        // Mockando o findAll para retornar uma lista com os 2 usuários fictícios
+        when(userRepository.findAll())
+                .thenReturn(List.of(user1, user2));
+
+        // Act
+        List<UserResponseDto> resultado = userService.buscarTodos();
+
+        // Assert
+        assertNotNull(resultado);
+        assertEquals(2, resultado.size());
+        assertEquals("Lincoln", resultado.get(0).nome());
+        assertEquals("Fabricio", resultado.get(1).nome());
+    }
+
+    @Test
+    @DisplayName("Deve deletar um usuário com sucesso quando o ID existir")
+    void deletarComSucesso() {
+        // Arrange
+        UUID idExistente = UUID.randomUUID();
+        User userExistente = new User();
+        userExistente.setId(idExistente);
+
+        // Mockando o findById para encontrar o usuário que será deletado
+        when(userRepository.findById(idExistente)).thenReturn(Optional.of(userExistente));
+
+        // Como o método delete do JpaRepository é void, usamos o doNothing() do Mockito
+        doNothing().when(userRepository).delete(userExistente);
+
+        // Act
+        assertDoesNotThrow(() -> userService.deletar(idExistente));
+
+        // Assert
+        // Verifica se o findById e o delete foram devidamente acionados
+        verify(userRepository, times(1)).findById(idExistente);
+        verify(userRepository, times(1)).delete(userExistente);
+    }
+
+    @Test
+    @DisplayName("Deve lançar RuntimeException ao tentar deletar um usuário inexistente")
+    void deletarDeveLancarExcecaoQuandoIdNaoExistir() {
+        // Arrange
+        UUID idInexistente = UUID.randomUUID();
+
+        // Forçando o mock a dizer que não encontrou ninguém com esse ID
+        when(userRepository.findById(idInexistente)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        RuntimeException excecao = assertThrows(RuntimeException.class, () -> {
+            userService.deletar(idInexistente);
+        });
+
+        assertEquals("Usuario nao encontrado para exclusão", excecao.getMessage());
+
+        // Clean Code/SOLID: Se não achou o usuário, o método delete NUNCA deve ser executado
+        verify(userRepository, never()).delete(any(User.class));
     }
 }
